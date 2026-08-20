@@ -249,7 +249,7 @@
     <p class="note">[note itll b a lil loud]</p>
     <p>activities: karaoke, music, jackbox, drinks</p>
 
-    <img src="assets/imgs/doggy.jpg" alt="vibes" style="width: 100%; max-width: 300px; height: auto; margin: 20px 0;">
+    <img src="assets/ings/doggy.jpg" alt="vibes" style="width: 100%; max-width: 300px; height: auto; margin: 20px 0;">
 
     <!-- PAGE 1: YES/NO -->
     <div class="page active" id="page1">
@@ -499,41 +499,58 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function displayResponses() {
-    const sheetUrl = 'https://script.google.com/macros/s/AKfycbxfbKJVferssiDJFI7vZ2zfsIx7ftbXT3dkorSHoojsSSitUcyDuWr55_RmTwzb2uVQ/exec';
-    
     try {
-        const response = await fetch(sheetUrl);
-        const responses = await response.json();
-        
-        const container = document.getElementById('responses-container');
-        const list = document.getElementById('responses-list');
+        // Use Google Sheets gviz endpoint (no CORS issues!)
+        const SHEET_ID = '1xGxaS8O0_9IwepWrc03M3GBamYQB3Qng1U5YSR9qczs';
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=RSVP%20Responses`;
 
-        if (responses.length === 0) {
-            container.style.display = 'none';
+        const res = await fetch(url);
+        const text = await res.text();
+
+        // Parse Google's JSON response (it's wrapped in a callback)
+        const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/)[1]);
+
+        const rows = json.table.rows;
+        if (!rows.length) {
+            document.getElementById('responses-container').style.display = 'none';
             return;
         }
+
+        const container = document.getElementById('responses-container');
+        const list = document.getElementById('responses-list');
 
         container.style.display = 'block';
         list.innerHTML = '';
 
-        responses.forEach(response => {
+        // Parse rows (skip first row which is headers)
+        rows.slice(1).forEach(row => {
+            const cells = row.c;
+            if (!cells || cells[6]?.v !== 'Yes') return; // Only show "Yes" responses
+
+            const name = cells[1]?.v || '';
+            const contact = cells[2]?.v || '';
+            const contactPublic = cells[3]?.v || '';
+            const avatar = cells[4]?.v || '';
+            const color = cells[5]?.v || '';
+
             const item = document.createElement('div');
             item.className = 'response-item';
-            const avatarColor = response.color ?
-                colors.find(c => c.name === response.color)?.hex || '#000000' : '#000000';
 
-            const contactDisplay = response.contactPublic === 'Public' && response.contact
-                ? response.contact
+            const avatarColor = color ?
+                colors.find(c => c.name === color)?.hex || '#000000' : '#000000';
+
+            const contactDisplay = contactPublic === 'Public' && contact
+                ? contact
                 : 'shhh';
 
             item.innerHTML = `
-                <span class="response-avatar" style="color: ${avatarColor}">${response.avatar}</span>
-                <span class="response-name" style="color: ${avatarColor}">${response.name}</span>
+                <span class="response-avatar" style="color: ${avatarColor}">${avatar}</span>
+                <span class="response-name" style="color: ${avatarColor}">${name}</span>
                 <span style="color: #999; font-size: 0.85rem;">(${contactDisplay})</span>
             `;
             list.appendChild(item);
         });
-    } catch (error) {
+    } catch (err) {
         console.log('Loading responses...');
     }
 }
