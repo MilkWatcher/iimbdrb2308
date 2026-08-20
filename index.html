@@ -249,7 +249,7 @@
     <p class="note">[note itll b a lil loud]</p>
     <p>activities: karaoke, music, jackbox, drinks</p>
 
-    <img src="assets/imgs/doggy.jpg" alt="vibes" style="width: 100%; max-width: 300px; height: auto; margin: 20px 0;">
+    <img src="assets/imgs/doggy.jpg" alt="the most fucked up picture ever" style="width: 100%; max-width: 300px; height: auto; margin: 20px 0;">
 
     <!-- PAGE 1: YES/NO -->
     <div class="page active" id="page1">
@@ -257,6 +257,12 @@
         <div class="button-options">
             <button onclick="playSound('yay'); saveResponse('coming', true); goToPage(2)">i wanna go</button>
             <button onclick="playSound('jumpscare'); showJumpscare(); saveResponse('coming', false)">i cant go</button>
+        </div>
+
+        <!-- GUEST LIST ON HOMEPAGE -->
+        <div class="responses" id="responses-container" style="display: none;">
+            <h2>whos coming:</h2>
+            <div id="responses-list"></div>
         </div>
     </div>
 
@@ -330,12 +336,6 @@
             <button onclick="playSound('click'); submitRsvp()">submit</button>
             <button onclick="playSound('click'); goToPage(3)">back</button>
         </div>
-    </div>
-
-    <!-- RESPONSES -->
-    <div class="responses" id="responses-container" style="display: none;">
-        <h2>whos coming:</h2>
-        <div id="responses-list"></div>
     </div>
 
     <!-- PICTURES -->
