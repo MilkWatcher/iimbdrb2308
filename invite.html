@@ -508,30 +508,48 @@ async function displayResponses() {
         const text = await res.text();
 
         // Parse Google's JSON response (it's wrapped in a callback)
-        const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/)[1]);
+        const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
+        if (!match) {
+            console.error('Failed to parse Google Sheets response');
+            return;
+        }
 
-        const rows = json.table.rows;
-        if (!rows.length) {
+        const json = JSON.parse(match[1]);
+
+        if (!json.table || !json.table.rows) {
+            console.log('No data in sheet');
             document.getElementById('responses-container').style.display = 'none';
             return;
         }
 
+        const rows = json.table.rows;
         const container = document.getElementById('responses-container');
         const list = document.getElementById('responses-list');
 
         container.style.display = 'block';
         list.innerHTML = '';
 
+        let count = 0;
         // Parse rows (skip first row which is headers)
-        rows.slice(1).forEach(row => {
+        rows.forEach((row, idx) => {
+            if (idx === 0) return; // Skip headers
+
             const cells = row.c;
-            if (!cells || cells[6]?.v !== 'Yes') return; // Only show "Yes" responses
+            if (!cells) return;
+
+            // Log to see structure
+            console.log(`Row ${idx}:`, cells.map(c => c?.v));
+
+            // Check if coming = 'Yes' (should be index 6)
+            if (cells[6]?.v !== 'Yes') return;
 
             const name = cells[1]?.v || '';
             const contact = cells[2]?.v || '';
             const contactPublic = cells[3]?.v || '';
             const avatar = cells[4]?.v || '';
             const color = cells[5]?.v || '';
+
+            if (!name || !avatar) return; // Skip incomplete entries
 
             const item = document.createElement('div');
             item.className = 'response-item';
@@ -549,9 +567,15 @@ async function displayResponses() {
                 <span style="color: #999; font-size: 0.85rem;">(${contactDisplay})</span>
             `;
             list.appendChild(item);
+            count++;
         });
+
+        console.log(`Displayed ${count} responses`);
+        if (count === 0) {
+            container.style.display = 'none';
+        }
     } catch (err) {
-        console.log('Loading responses...');
+        console.error('Error loading responses:', err);
     }
 }
 
