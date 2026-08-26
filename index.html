@@ -557,33 +557,16 @@ function displayPhotos() {
     const photoGrid = document.getElementById('photo-grid');
     photoGrid.innerHTML = '';
 
-    // Show uploaded images first
-    uploadedImages.forEach((blobUrl, idx) => {
+    // Show uploaded images first (from Google Drive)
+    uploadedImages.forEach((url, idx) => {
+        if (!url) return;
         const container = document.createElement('div');
         container.style.cursor = 'pointer';
-        container.style.position = 'relative';
         const img = document.createElement('img');
-        img.src = blobUrl;
+        img.src = url;
         img.alt = 'uploaded photo';
-        img.onclick = () => window.open(blobUrl, '_blank');
-
-        // Add remove button
-        const removeBtn = document.createElement('button');
-        removeBtn.textContent = '✕';
-        removeBtn.style.position = 'absolute';
-        removeBtn.style.top = '2px';
-        removeBtn.style.right = '2px';
-        removeBtn.style.padding = '2px 6px';
-        removeBtn.style.fontSize = '0.9rem';
-        removeBtn.style.cursor = 'pointer';
-        removeBtn.onclick = (e) => {
-            e.stopPropagation();
-            uploadedImages.splice(idx, 1);
-            displayPhotos();
-        };
-
+        img.onclick = () => window.open(url, '_blank');
         container.appendChild(img);
-        container.appendChild(removeBtn);
         photoGrid.appendChild(container);
     });
 
@@ -595,7 +578,7 @@ function displayPhotos() {
         'pic1.jpg', 'pic2.jpg', 'pic3.jpg', 'pic4.jpg', 'pic5.jpg'
     ];
 
-    let loadedCount = uploadedImages.length;
+    let loadedCount = uploadedImages.filter(u => u).length;
 
     possibleNames.forEach(filename => {
         const img = new Image();
@@ -628,11 +611,10 @@ function displayPhotos() {
 }
 
 displayResponses();
+loadUploadedImages();  // Load previously uploaded photos
 displayPhotos();
 updateAvatarPreview();
 initializeColorSelector();
-
-let uploadedImages = [];
 
 function uploadPhotos() {
     const fileInput = document.getElementById('photo-upload');
@@ -643,19 +625,73 @@ function uploadPhotos() {
         return;
     }
 
+    // Send each image to Google Drive
     files.forEach(file => {
         if (file.type.startsWith('image/')) {
-            const blobUrl = URL.createObjectURL(file);
-            uploadedImages.push(blobUrl);
-            playSound('yay');
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64 = e.target.result;
+                sendImageToGoogleDrive(file.name, base64);
+            };
+            reader.readAsDataURL(file);
         }
     });
 
     // Clear input
     fileInput.value = '';
+    playSound('yay');
+}
 
-    // Refresh gallery
-    displayPhotos();
+async function sendImageToGoogleDrive(filename, base64Data) {
+    const sheetUrl = 'https://script.google.com/macros/s/AKfycbxFnAHaBt0mCIz1W6RleNC83sz3Dj987D0R-1JndtVefjMx8LFBeqO2VOECngBD7ges/exec';
+
+    try {
+        const response = await fetch(sheetUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+                action: 'uploadPhoto',
+                filename: filename,
+                imageData: base64Data
+            })
+        });
+
+        // Since no-cors doesn't return response, just assume success
+        loadUploadedImages();
+    } catch (err) {
+        console.error('Upload error:', err);
+    }
+}
+
+async function loadUploadedImages() {
+    try {
+        const SHEET_ID = '1xGxaS8O0_9IwepWrc03M3GBamYQB3Qng1U5YSR9qczs';
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=uploaded_photos`;
+
+        const res = await fetch(url);
+        const text = await res.text();
+        const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
+
+        if (!match) return;
+
+        const json = JSON.parse(match[1]);
+        if (!json.table || !json.table.rows) return;
+
+        uploadedImages = [];
+        const rows = json.table.rows;
+
+        rows.forEach((row, idx) => {
+            if (idx === 0) return; // Skip headers
+            const cells = row.c;
+            if (cells && cells[1]?.v) {
+                uploadedImages.push(cells[1].v); // URL from Google Drive
+            }
+        });
+
+        displayPhotos();
+    } catch (err) {
+        console.log('Could not load uploaded images');
+    }
 }
 </script>
 
