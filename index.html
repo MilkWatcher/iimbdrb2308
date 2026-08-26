@@ -352,10 +352,15 @@ function closeJumpscare() {
 function updateAvatarPreview() {
     const avatar = eyes[currentEyesIndex] + mouths[currentMouthIndex];
     const color = colors[currentColorIndex].hex;
-    document.getElementById('avatar-preview').textContent = avatar;
-    document.getElementById('avatar-preview').style.color = color;
-    document.getElementById('eyes-display').textContent = eyes[currentEyesIndex];
-    document.getElementById('mouth-display').textContent = mouths[currentMouthIndex];
+    const previewEl = document.getElementById('avatar-preview');
+    if (!previewEl) return; // Element doesn't exist on this page
+
+    previewEl.textContent = avatar;
+    previewEl.style.color = color;
+    const eyesEl = document.getElementById('eyes-display');
+    const mouthEl = document.getElementById('mouth-display');
+    if (eyesEl) eyesEl.textContent = eyes[currentEyesIndex];
+    if (mouthEl) mouthEl.textContent = mouths[currentMouthIndex];
 }
 
 function changeLEyes() {
@@ -532,6 +537,8 @@ document.getElementById('google-photos-link').href = 'https://drive.google.com/d
 
 function initializeColorSelector() {
     const colorSelector = document.getElementById('color-selector');
+    if (!colorSelector) return; // Element doesn't exist on this page
+
     colors.forEach((color, index) => {
         const colorBtn = document.createElement('div');
         colorBtn.style.textAlign = 'center';
@@ -609,6 +616,8 @@ function displayPhotos() {
         }
     }, 500);
 }
+
+let uploadedImages = [];
 
 displayResponses();
 loadUploadedImages();  // Load previously uploaded photos
