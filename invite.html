@@ -154,6 +154,17 @@
             border-top: 1px solid #000;
             padding-top: 20px;
         }
+        .photo-grid {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #000;
+            margin: 15px 0;
+        }
+        .photo-grid iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
         .note {
             font-size: 0.9rem;
             font-style: italic;
@@ -244,104 +255,26 @@
 <body>
 
 <div class="container">
-    <h1>ur invited to reans bday!</h1>
-    <p>turning 20 august 24th ~ monday</p>
-    <p class="note">[note itll b a lil loud]</p>
-    <p>activities: karaoke, music, jackbox, drinks</p>
+    <h1>reans 20th was lit 🎉</h1>
+    <p>august 24th 2024 ~ it happened!</p>
+    <p class="note">thanks for coming & making it amazing</p>
 
-    <img src="assets/imgs/doggy.jpg" alt="the most fucked up picture ever" style="width: 100%; max-width: 300px; height: auto; margin: 20px 0;">
+    <img src="assets/imgs/doggy.jpg" alt="memories" style="width: 100%; max-width: 300px; height: auto; margin: 20px 0;">
 
-    <!-- PAGE 1: YES/NO -->
-    <div class="page active" id="page1">
-        <h2>wait r u actually comin?</h2>
-        <div class="button-options">
-            <button onclick="playSound('yay'); saveResponse('coming', true); goToPage(2)">i wanna go</button>
-            <button onclick="playSound('jumpscare'); showJumpscare(); saveResponse('coming', false)">i cant go</button>
-        </div>
-
-        <!-- GUEST LIST ON HOMEPAGE -->
-        <div class="responses" id="responses-container" style="display: none;">
-            <h2>whos coming:</h2>
-            <div id="responses-list"></div>
-        </div>
+    <!-- FINAL GUEST LIST -->
+    <div class="responses" id="responses-container" style="display: none;">
+        <h2>who made it:</h2>
+        <div id="responses-list"></div>
     </div>
 
-    <!-- PAGE 2: ACTIVITIES -->
-    <div class="page" id="page2">
-        <h2>what r u down to do?</h2>
-        <p>pick all that apply</p>
-        <div class="checkbox-group">
-            <label><input type="checkbox" name="activity" value="play"> i want to play</label>
-            <label><input type="checkbox" name="activity" value="sing"> i want to sing</label>
-            <label><input type="checkbox" name="activity" value="listen"> i want to listen</label>
-        </div>
-        <div class="button-group">
-            <button onclick="playSound('click'); saveActivities(); goToPage(3)">next</button>
-            <button onclick="playSound('click'); goToPage(1)">back</button>
-        </div>
-    </div>
-
-    <!-- PAGE 3: EAR PROTECTION -->
-    <div class="page" id="page3">
-        <h2>ear protection</h2>
-        <p>because we suk (jk we car for ur hearing) </p>
-        <br>
-        <p>what u got</p>
-        <div class="button-options">
-            <button onclick="playSound('click'); saveEars('own'); goToPage(5)">i own ear protection</button>
-            <button onclick="playSound('click'); saveEars('dont'); goToPage(5)">i dont have any (dont thug it out)</button>
-            <button onclick="playSound('click'); saveEars('buy'); goToPage(5)">ill buy my own</button>
-        </div>
-        <p><a href="https://www.amazon.com/s?k=earplugs" target="_blank">>> earplugs (shibal i sent the invite too l8)</a></p>
-        <div class="button-group">
-            <button onclick="playSound('click'); goToPage(2)">back</button>
-        </div>
-    </div>
-
-    <!-- PAGE 5: WHO R U -->
-    <div class="page" id="page5">
-        <h2>who r u?</h2>
-        <label>name/nickname:</label>
-        <input type="text" id="name" placeholder="ur name" required>
-
-        <label>contact (instagram/whatsapp/discord):</label>
-        <input type="text" id="contact" placeholder="@handle or link">
-        <label style="margin-top: 5px;">
-            <input type="checkbox" id="contact-public"> show contact in guest list
-        </label>
-
-        <div class="avatar-controls">
-            <label>pick ur avatar:</label>
-
-            <div class="avatar-section">
-                <div class="avatar-preview" id="avatar-preview">:)</div>
-                <div class="avatar-buttons">
-                    <button class="avatar-button" onclick="changeLEyes()"><</button>
-                    <div>
-                        <div class="avatar-info">
-                            <div>eyes: <span id="eyes-display">:</span></div>
-                            <div>mouth: <span id="mouth-display">)</span></div>
-                        </div>
-                    </div>
-                    <button class="avatar-button" onclick="changeMouth()">></button>
-                </div>
-                <div class="arrow-hints">click < > to change</div>
-            </div>
-
-            <label>pick a colour:</label>
-            <div class="color-selector" id="color-selector"></div>
-        </div>
-
-        <div class="button-group">
-            <button onclick="playSound('click'); submitRsvp()">submit</button>
-            <button onclick="playSound('click'); goToPage(3)">back</button>
-        </div>
-    </div>
-
-    <!-- PICTURES -->
+    <!-- PHOTOS GALLERY - MAIN FOCUS -->
     <div class="images-section">
-        <h2>pics from bday</h2>
-        <p><a href="#" id="google-photos-link" target="_blank">>> google photos album</a></p>
+        <h2>pics from the night 📸</h2>
+        <p style="font-size: 0.9rem; color: #666;">tap to view full size</p>
+        <div class="photo-grid" id="photo-grid" style="margin-top: 15px;"></div>
+        <p style="text-align: center; margin-top: 20px; font-size: 0.85rem; color: #999;">
+            <a href="https://drive.google.com/drive/folders/1NOzEsGmkzHOnN6oqP3titsBYsFH4XtxX?usp=sharing" target="_blank">>>> full album on google drive</a>
+        </p>
     </div>
 
 </div>
@@ -606,7 +539,17 @@ function selectColor(index) {
     updateAvatarPreview();
 }
 
+function displayPhotos() {
+    const photoGrid = document.getElementById('photo-grid');
+
+    // Embed Google Drive folder
+    photoGrid.innerHTML = `
+        <iframe src="https://drive.google.com/embeddedfolderview?id=1NOzEsGmkzHOnN6oqP3titsBYsFH4XtxX#grid" allow="fullscreen"></iframe>
+    `;
+}
+
 displayResponses();
+displayPhotos();
 updateAvatarPreview();
 initializeColorSelector();
 </script>
