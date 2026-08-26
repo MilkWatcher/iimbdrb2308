@@ -156,14 +156,20 @@
         }
         .photo-grid {
             width: 100%;
-            height: 600px;
-            border: 1px solid #000;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
             margin: 15px 0;
         }
-        .photo-grid iframe {
+        .photo-grid img {
             width: 100%;
-            height: 100%;
-            border: none;
+            height: 150px;
+            object-fit: cover;
+            border: 1px solid #000;
+            cursor: pointer;
+        }
+        .photo-grid img:hover {
+            opacity: 0.8;
         }
         .note {
             font-size: 0.9rem;
@@ -542,10 +548,51 @@ function selectColor(index) {
 function displayPhotos() {
     const photoGrid = document.getElementById('photo-grid');
 
-    // Embed Google Drive folder
-    photoGrid.innerHTML = `
-        <iframe src="https://drive.google.com/embeddedfolderview?id=1NOzEsGmkzHOnN6oqP3titsBYsFH4XtxX#grid" allow="fullscreen"></iframe>
-    `;
+    // Load images from assets/photos/ folder
+    const imageFiles = [];
+
+    // List of image filenames (user adds images to assets/photos/ folder)
+    // This attempts to load common photo names
+    const possibleNames = [
+        'photo1.jpg', 'photo2.jpg', 'photo3.jpg', 'photo4.jpg', 'photo5.jpg',
+        'photo6.jpg', 'photo7.jpg', 'photo8.jpg', 'photo9.jpg', 'photo10.jpg',
+        '1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg',
+        'pic1.jpg', 'pic2.jpg', 'pic3.jpg', 'pic4.jpg', 'pic5.jpg'
+    ];
+
+    let loadedCount = 0;
+    photoGrid.innerHTML = '';
+
+    possibleNames.forEach(filename => {
+        const img = new Image();
+        img.onload = () => {
+            const container = document.createElement('div');
+            container.style.cursor = 'pointer';
+            const imgEl = document.createElement('img');
+            imgEl.src = `assets/photos/${filename}`;
+            imgEl.alt = 'photo';
+            imgEl.onclick = () => window.open(`assets/photos/${filename}`, '_blank');
+            container.appendChild(imgEl);
+            photoGrid.appendChild(container);
+            loadedCount++;
+        };
+        img.onerror = () => {
+            // Image doesn't exist, skip it
+        };
+        img.src = `assets/photos/${filename}`;
+    });
+
+    // If no images found after a brief wait, show message
+    setTimeout(() => {
+        if (loadedCount === 0) {
+            photoGrid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 30px; background: #fafafa; border: 1px solid #000;">
+                    <p style="margin: 10px 0;">📁 no photos yet</p>
+                    <p style="font-size: 0.85rem; color: #666; margin: 10px 0;">add images to <code>assets/photos/</code> folder</p>
+                </div>
+            `;
+        }
+    }, 500);
 }
 
 displayResponses();
