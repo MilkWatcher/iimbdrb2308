@@ -171,6 +171,122 @@
         .photo-grid img:hover {
             opacity: 0.8;
         }
+        .tag-preview-item {
+            border: 1px solid #000;
+            padding: 10px;
+            margin: 10px 0;
+            background: #fff;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        .tag-preview-item img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border: 1px solid #000;
+            margin: 0;
+            flex-shrink: 0;
+        }
+        .tag-preview-checks {
+            flex: 1;
+            text-align: left;
+        }
+        .tag-preview-checks label {
+            display: block;
+            font-size: 0.85rem;
+            margin: 3px 0;
+            text-align: left;
+        }
+        #confirm-upload-btn {
+            display: block;
+            margin: 10px auto 0;
+        }
+        .lightbox-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .lightbox-overlay.active {
+            display: flex;
+        }
+        .lightbox-container {
+            position: relative;
+            background: #fff;
+            border: 2px solid #000;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        .lightbox-image {
+            flex: 1 1 60%;
+            width: auto;
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+            border: 1px solid #000;
+            margin: 0;
+        }
+        .lightbox-who {
+            flex: 0 0 220px;
+            text-align: left;
+        }
+        .lightbox-who h3 {
+            text-align: left;
+            margin-bottom: 10px;
+        }
+        .tag-box {
+            border: 2px solid #000;
+            padding: 8px 10px;
+            margin: 8px 0;
+            font-weight: bold;
+        }
+        .tag-box-empty {
+            font-size: 0.85rem;
+            color: #666;
+            font-weight: normal;
+        }
+        .tag-edit-row {
+            display: block;
+            margin: 6px 0;
+            font-weight: normal;
+        }
+        .lightbox-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #fff;
+            border: 2px solid #000;
+            width: 36px;
+            height: 36px;
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            z-index: 1;
+        }
+        @media (max-width: 650px) {
+            .lightbox-container {
+                flex-direction: column;
+            }
+            .lightbox-who {
+                flex: 1 1 auto;
+            }
+        }
         .note {
             font-size: 0.9rem;
             font-style: italic;
@@ -261,15 +377,15 @@
 <body>
 
 <div class="container">
-    <h1>reans 20th very epic</h1>
-    <p>august 24th 2024 ~ did smthn</p>
-    <p class="note">thanks 4 comin!</p>
+    <h1>thank you for coming!</h1>
+    <p>august 24th 2024 ~ what a night 🎉</p>
+    <p class="note">here's everyone who made it & the pics from the night</p>
 
     <img src="assets/imgs/doggy.jpg" alt="memories" style="width: 100%; max-width: 300px; height: auto; margin: 20px 0;">
 
     <!-- FINAL GUEST LIST -->
     <div class="responses" id="responses-container" style="display: none;">
-        <h2>who made it:</h2>
+        <h2>everyone who came:</h2>
         <div id="responses-list"></div>
     </div>
 
@@ -280,17 +396,32 @@
         <!-- FILE UPLOAD -->
         <div style="margin: 15px 0; padding: 10px; background: #fafafa; border: 1px solid #000;">
             <label for="photo-upload" style="display: block; margin-bottom: 8px;">add your pics:</label>
-            <input type="file" id="photo-upload" accept="image/*" multiple style="padding: 5px 0;">
-            <button onclick="uploadPhotos()" style="margin-top: 8px;">upload</button>
+            <input type="file" id="photo-upload" accept="image/*" multiple style="padding: 5px 0;" onchange="handleFileSelection()">
+            <div id="tag-preview-list"></div>
         </div>
 
-        <p style="font-size: 0.9rem; color: #666;">tap to view full size</p>
+        <p style="font-size: 0.9rem; color: #666;">tap a photo to see who's in it</p>
         <div class="photo-grid" id="photo-grid" style="margin-top: 15px;"></div>
         <p style="text-align: center; margin-top: 20px; font-size: 0.85rem; color: #999;">
             <a href="https://drive.google.com/drive/folders/1NOzEsGmkzHOnN6oqP3titsBYsFH4XtxX?usp=sharing" target="_blank">>>> full album on google drive</a>
         </p>
     </div>
 
+</div>
+
+<!-- PHOTO LIGHTBOX -->
+<div class="lightbox-overlay" id="photo-lightbox" onclick="handleLightboxBackgroundClick(event)">
+    <div class="lightbox-container">
+        <button class="lightbox-close" onclick="closeLightbox()">×</button>
+        <img class="lightbox-image" id="lightbox-image" src="" alt="photo">
+        <div class="lightbox-who">
+            <h3>who?</h3>
+            <div id="lightbox-tags-view"></div>
+            <div id="lightbox-tags-edit" style="display: none;"></div>
+            <button id="lightbox-edit-btn" onclick="startEditTags()">edit tags</button>
+            <button id="lightbox-save-btn" onclick="saveEditTags()" style="display: none;">save</button>
+        </div>
+    </div>
 </div>
 
 <!-- JUMPSCARE OVERLAY -->
@@ -452,6 +583,8 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+let guestList = [];
+
 async function displayResponses() {
     try {
         // Use Google Sheets gviz endpoint (no CORS issues!)
@@ -482,6 +615,7 @@ async function displayResponses() {
 
         container.style.display = 'block';
         list.innerHTML = '';
+        guestList = [];
 
         let count = 0;
         // Parse rows (skip first row which is headers)
@@ -490,9 +624,6 @@ async function displayResponses() {
 
             const cells = row.c;
             if (!cells) return;
-
-            // Log to see structure
-            console.log(`Row ${idx}:`, cells.map(c => c?.v));
 
             // Check if coming = 'Yes' (should be index 6)
             if (cells[6]?.v !== 'Yes') return;
@@ -504,6 +635,8 @@ async function displayResponses() {
             const color = cells[5]?.v || '';
 
             if (!name || !avatar) return; // Skip incomplete entries
+
+            guestList.push({ name, avatar, color });
 
             const item = document.createElement('div');
             item.className = 'response-item';
@@ -524,16 +657,21 @@ async function displayResponses() {
             count++;
         });
 
-        console.log(`Displayed ${count} responses`);
         if (count === 0) {
             container.style.display = 'none';
         }
+
+        // Guest list is needed by the tag picker & lightbox, so re-render
+        // photos now that guest colors/avatars are available.
+        displayPhotos();
     } catch (err) {
         console.error('Error loading responses:', err);
     }
 }
 
-document.getElementById('google-photos-link').href = 'https://drive.google.com/drive/folders/1NOzEsGmkzHOnN6oqP3titsBYsFH4XtxX?usp=sharing';
+function findGuest(name) {
+    return guestList.find(g => g.name === name);
+}
 
 function initializeColorSelector() {
     const colorSelector = document.getElementById('color-selector');
@@ -560,116 +698,33 @@ function selectColor(index) {
     updateAvatarPreview();
 }
 
+let photos = []; // {fileId, url, filename, tagged: string[]}
+let currentLightboxIndex = null;
+
 function displayPhotos() {
     const photoGrid = document.getElementById('photo-grid');
     photoGrid.innerHTML = '';
 
-    // Show uploaded images first (from Google Drive)
-    uploadedImages.forEach((url, idx) => {
-        if (!url) return;
-        const container = document.createElement('div');
-        container.style.cursor = 'pointer';
-        const img = document.createElement('img');
-        img.src = url;
-        img.alt = 'uploaded photo';
-        img.onclick = () => window.open(url, '_blank');
-        container.appendChild(img);
-        photoGrid.appendChild(container);
-    });
-
-    // Load images from assets/photos/ folder
-    const possibleNames = [
-        'photo1.jpg', 'photo2.jpg', 'photo3.jpg', 'photo4.jpg', 'photo5.jpg',
-        'photo6.jpg', 'photo7.jpg', 'photo8.jpg', 'photo9.jpg', 'photo10.jpg',
-        '1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg',
-        'pic1.jpg', 'pic2.jpg', 'pic3.jpg', 'pic4.jpg', 'pic5.jpg'
-    ];
-
-    let loadedCount = uploadedImages.filter(u => u).length;
-
-    possibleNames.forEach(filename => {
-        const img = new Image();
-        img.onload = () => {
-            const container = document.createElement('div');
-            container.style.cursor = 'pointer';
-            const imgEl = document.createElement('img');
-            imgEl.src = `assets/photos/${filename}`;
-            imgEl.alt = 'photo';
-            imgEl.onclick = () => window.open(`assets/photos/${filename}`, '_blank');
-            container.appendChild(imgEl);
-            photoGrid.appendChild(container);
-            loadedCount++;
-        };
-        img.onerror = () => {};
-        img.src = `assets/photos/${filename}`;
-    });
-
-    // If no images found after a brief wait, show message
-    setTimeout(() => {
-        if (loadedCount === 0) {
-            photoGrid.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 30px; background: #fafafa; border: 1px solid #000;">
-                    <p style="margin: 10px 0;">📁 no photos yet</p>
-                    <p style="font-size: 0.85rem; color: #666; margin: 10px 0;">upload some above or add to assets/photos/ folder</p>
-                </div>
-            `;
-        }
-    }, 500);
-}
-
-let uploadedImages = [];
-
-displayResponses();
-loadUploadedImages();  // Load previously uploaded photos
-displayPhotos();
-updateAvatarPreview();
-initializeColorSelector();
-
-function uploadPhotos() {
-    const fileInput = document.getElementById('photo-upload');
-    const files = Array.from(fileInput.files);
-
-    if (files.length === 0) {
-        alert('select photos to upload');
+    if (photos.length === 0) {
+        photoGrid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 30px; background: #fafafa; border: 1px solid #000;">
+                <p style="margin: 10px 0;">📁 no photos yet</p>
+                <p style="font-size: 0.85rem; color: #666; margin: 10px 0;">upload some above!</p>
+            </div>
+        `;
         return;
     }
 
-    // Send each image to Google Drive
-    files.forEach(file => {
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const base64 = e.target.result;
-                sendImageToGoogleDrive(file.name, base64);
-            };
-            reader.readAsDataURL(file);
-        }
+    photos.forEach((photo, idx) => {
+        const container = document.createElement('div');
+        container.style.cursor = 'pointer';
+        const img = document.createElement('img');
+        img.src = photo.url;
+        img.alt = 'party photo';
+        img.onclick = () => openLightbox(idx);
+        container.appendChild(img);
+        photoGrid.appendChild(container);
     });
-
-    // Clear input
-    fileInput.value = '';
-    playSound('yay');
-}
-
-async function sendImageToGoogleDrive(filename, base64Data) {
-    const sheetUrl = 'https://script.google.com/macros/s/AKfycbxFnAHaBt0mCIz1W6RleNC83sz3Dj987D0R-1JndtVefjMx8LFBeqO2VOECngBD7ges/exec';
-
-    try {
-        const response = await fetch(sheetUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify({
-                action: 'uploadPhoto',
-                filename: filename,
-                imageData: base64Data
-            })
-        });
-
-        // Since no-cors doesn't return response, just assume success
-        loadUploadedImages();
-    } catch (err) {
-        console.error('Upload error:', err);
-    }
 }
 
 async function loadUploadedImages() {
@@ -686,15 +741,26 @@ async function loadUploadedImages() {
         const json = JSON.parse(match[1]);
         if (!json.table || !json.table.rows) return;
 
-        uploadedImages = [];
+        photos = [];
         const rows = json.table.rows;
 
         rows.forEach((row, idx) => {
             if (idx === 0) return; // Skip headers
             const cells = row.c;
-            if (cells && cells[1]?.v) {
-                uploadedImages.push(cells[1].v); // URL from Google Drive
-            }
+            if (!cells || !cells[2]?.v) return;
+
+            const tagged = (cells[4]?.v || '')
+                .toString()
+                .split(',')
+                .map(n => n.trim())
+                .filter(Boolean);
+
+            photos.push({
+                filename: cells[1]?.v || '',
+                url: cells[2].v,
+                fileId: cells[3]?.v || '',
+                tagged
+            });
         });
 
         displayPhotos();
@@ -702,6 +768,238 @@ async function loadUploadedImages() {
         console.log('Could not load uploaded images');
     }
 }
+
+// ===== UPLOAD + PER-PHOTO TAGGING =====
+
+let selectedFilesData = []; // { file, previewUrl, tags: Set<string> }
+
+function handleFileSelection() {
+    const fileInput = document.getElementById('photo-upload');
+    const files = Array.from(fileInput.files).filter(f => f.type.startsWith('image/'));
+
+    selectedFilesData = files.map(file => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+        tags: new Set()
+    }));
+
+    renderTagPreviewList();
+}
+
+function renderTagPreviewList() {
+    const container = document.getElementById('tag-preview-list');
+
+    if (selectedFilesData.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = '';
+
+    selectedFilesData.forEach((entry, fileIdx) => {
+        const item = document.createElement('div');
+        item.className = 'tag-preview-item';
+
+        const img = document.createElement('img');
+        img.src = entry.previewUrl;
+        item.appendChild(img);
+
+        const checksWrap = document.createElement('div');
+        checksWrap.className = 'tag-preview-checks';
+
+        const label = document.createElement('div');
+        label.textContent = "who's in this one?";
+        label.style.fontWeight = 'bold';
+        label.style.marginBottom = '5px';
+        checksWrap.appendChild(label);
+
+        if (guestList.length === 0) {
+            const none = document.createElement('div');
+            none.className = 'tag-box-empty';
+            none.textContent = 'no guest list loaded yet';
+            checksWrap.appendChild(none);
+        }
+
+        guestList.forEach(guest => {
+            const guestLabel = document.createElement('label');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.onchange = () => {
+                if (checkbox.checked) {
+                    entry.tags.add(guest.name);
+                } else {
+                    entry.tags.delete(guest.name);
+                }
+            };
+            guestLabel.appendChild(checkbox);
+            guestLabel.append(` ${guest.avatar} ${guest.name}`);
+            checksWrap.appendChild(guestLabel);
+        });
+
+        item.appendChild(checksWrap);
+        container.appendChild(item);
+    });
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.id = 'confirm-upload-btn';
+    confirmBtn.textContent = 'confirm & upload';
+    confirmBtn.onclick = confirmUpload;
+    container.appendChild(confirmBtn);
+}
+
+function readFileAsDataURL(file) {
+    return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.readAsDataURL(file);
+    });
+}
+
+async function confirmUpload() {
+    if (selectedFilesData.length === 0) return;
+
+    for (const entry of selectedFilesData) {
+        const base64 = await readFileAsDataURL(entry.file);
+        await sendImageToGoogleDrive(entry.file.name, base64, Array.from(entry.tags));
+    }
+
+    playSound('yay');
+
+    selectedFilesData.forEach(entry => URL.revokeObjectURL(entry.previewUrl));
+    selectedFilesData = [];
+    document.getElementById('tag-preview-list').innerHTML = '';
+    document.getElementById('photo-upload').value = '';
+
+    loadUploadedImages();
+}
+
+async function sendImageToGoogleDrive(filename, base64Data, tagged) {
+    const sheetUrl = 'https://script.google.com/macros/s/AKfycbxFnAHaBt0mCIz1W6RleNC83sz3Dj987D0R-1JndtVefjMx8LFBeqO2VOECngBD7ges/exec';
+
+    try {
+        await fetch(sheetUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+                action: 'uploadPhoto',
+                filename: filename,
+                imageData: base64Data,
+                tagged: tagged.join(',')
+            })
+        });
+    } catch (err) {
+        console.error('Upload error:', err);
+    }
+}
+
+// ===== LIGHTBOX =====
+
+function openLightbox(idx) {
+    currentLightboxIndex = idx;
+    const photo = photos[idx];
+
+    document.getElementById('lightbox-image').src = photo.url;
+    renderLightboxTagsView();
+
+    document.getElementById('photo-lightbox').classList.add('active');
+}
+
+function closeLightbox() {
+    document.getElementById('photo-lightbox').classList.remove('active');
+    currentLightboxIndex = null;
+}
+
+function handleLightboxBackgroundClick(event) {
+    if (event.target.id === 'photo-lightbox') {
+        closeLightbox();
+    }
+}
+
+function renderLightboxTagsView() {
+    const photo = photos[currentLightboxIndex];
+    const viewEl = document.getElementById('lightbox-tags-view');
+    const editEl = document.getElementById('lightbox-tags-edit');
+
+    viewEl.style.display = 'block';
+    editEl.style.display = 'none';
+    document.getElementById('lightbox-edit-btn').style.display = 'inline-block';
+    document.getElementById('lightbox-save-btn').style.display = 'none';
+
+    if (photo.tagged.length === 0) {
+        viewEl.innerHTML = '<p class="tag-box-empty">no one tagged yet</p>';
+        return;
+    }
+
+    viewEl.innerHTML = photo.tagged.map(name => {
+        const guest = findGuest(name);
+        const color = guest ? (colors.find(c => c.name === guest.color)?.hex || '#000') : '#000';
+        const avatar = guest ? guest.avatar : '';
+        return `<div class="tag-box" style="color: ${color}">${avatar} ${name}</div>`;
+    }).join('');
+}
+
+function startEditTags() {
+    const photo = photos[currentLightboxIndex];
+
+    if (!photo.fileId) {
+        alert("can't edit tags on this photo (missing id)");
+        return;
+    }
+
+    const viewEl = document.getElementById('lightbox-tags-view');
+    const editEl = document.getElementById('lightbox-tags-edit');
+
+    viewEl.style.display = 'none';
+    editEl.style.display = 'block';
+    document.getElementById('lightbox-edit-btn').style.display = 'none';
+    document.getElementById('lightbox-save-btn').style.display = 'inline-block';
+
+    editEl.innerHTML = '';
+    guestList.forEach(guest => {
+        const label = document.createElement('label');
+        label.className = 'tag-edit-row';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = guest.name;
+        checkbox.checked = photo.tagged.includes(guest.name);
+        label.appendChild(checkbox);
+        label.append(` ${guest.avatar} ${guest.name}`);
+        editEl.appendChild(label);
+    });
+}
+
+async function saveEditTags() {
+    const photo = photos[currentLightboxIndex];
+    const editEl = document.getElementById('lightbox-tags-edit');
+    const checked = Array.from(editEl.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+
+    photo.tagged = checked;
+    await updatePhotoTags(photo.fileId, checked);
+    renderLightboxTagsView();
+}
+
+async function updatePhotoTags(fileId, tagged) {
+    const sheetUrl = 'https://script.google.com/macros/s/AKfycbxFnAHaBt0mCIz1W6RleNC83sz3Dj987D0R-1JndtVefjMx8LFBeqO2VOECngBD7ges/exec';
+
+    try {
+        await fetch(sheetUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+                action: 'updateTags',
+                fileId: fileId,
+                tagged: tagged.join(',')
+            })
+        });
+    } catch (err) {
+        console.error('Update tags error:', err);
+    }
+}
+
+displayResponses();
+loadUploadedImages();
+updateAvatarPreview();
+initializeColorSelector();
 </script>
 
 </body>
