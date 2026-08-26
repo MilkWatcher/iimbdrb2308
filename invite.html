@@ -261,9 +261,9 @@
 <body>
 
 <div class="container">
-    <h1>reans 20th was lit 🎉</h1>
-    <p>august 24th 2024 ~ it happened!</p>
-    <p class="note">thanks for coming & making it amazing</p>
+    <h1>reans 20th very epic</h1>
+    <p>august 24th 2024 ~ did smthn</p>
+    <p class="note">thanks 4 comin!</p>
 
     <img src="assets/imgs/doggy.jpg" alt="memories" style="width: 100%; max-width: 300px; height: auto; margin: 20px 0;">
 
@@ -276,6 +276,14 @@
     <!-- PHOTOS GALLERY - MAIN FOCUS -->
     <div class="images-section">
         <h2>pics from the night 📸</h2>
+
+        <!-- FILE UPLOAD -->
+        <div style="margin: 15px 0; padding: 10px; background: #fafafa; border: 1px solid #000;">
+            <label for="photo-upload" style="display: block; margin-bottom: 8px;">add your pics:</label>
+            <input type="file" id="photo-upload" accept="image/*" multiple style="padding: 5px 0;">
+            <button onclick="uploadPhotos()" style="margin-top: 8px;">upload</button>
+        </div>
+
         <p style="font-size: 0.9rem; color: #666;">tap to view full size</p>
         <div class="photo-grid" id="photo-grid" style="margin-top: 15px;"></div>
         <p style="text-align: center; margin-top: 20px; font-size: 0.85rem; color: #999;">
@@ -547,12 +555,22 @@ function selectColor(index) {
 
 function displayPhotos() {
     const photoGrid = document.getElementById('photo-grid');
+    photoGrid.innerHTML = '';
+
+    // Show uploaded images first (from Google Drive)
+    uploadedImages.forEach((url, idx) => {
+        if (!url) return;
+        const container = document.createElement('div');
+        container.style.cursor = 'pointer';
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = 'uploaded photo';
+        img.onclick = () => window.open(url, '_blank');
+        container.appendChild(img);
+        photoGrid.appendChild(container);
+    });
 
     // Load images from assets/photos/ folder
-    const imageFiles = [];
-
-    // List of image filenames (user adds images to assets/photos/ folder)
-    // This attempts to load common photo names
     const possibleNames = [
         'photo1.jpg', 'photo2.jpg', 'photo3.jpg', 'photo4.jpg', 'photo5.jpg',
         'photo6.jpg', 'photo7.jpg', 'photo8.jpg', 'photo9.jpg', 'photo10.jpg',
@@ -560,8 +578,7 @@ function displayPhotos() {
         'pic1.jpg', 'pic2.jpg', 'pic3.jpg', 'pic4.jpg', 'pic5.jpg'
     ];
 
-    let loadedCount = 0;
-    photoGrid.innerHTML = '';
+    let loadedCount = uploadedImages.filter(u => u).length;
 
     possibleNames.forEach(filename => {
         const img = new Image();
@@ -576,9 +593,7 @@ function displayPhotos() {
             photoGrid.appendChild(container);
             loadedCount++;
         };
-        img.onerror = () => {
-            // Image doesn't exist, skip it
-        };
+        img.onerror = () => {};
         img.src = `assets/photos/${filename}`;
     });
 
@@ -588,7 +603,7 @@ function displayPhotos() {
             photoGrid.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 30px; background: #fafafa; border: 1px solid #000;">
                     <p style="margin: 10px 0;">📁 no photos yet</p>
-                    <p style="font-size: 0.85rem; color: #666; margin: 10px 0;">add images to <code>assets/photos/</code> folder</p>
+                    <p style="font-size: 0.85rem; color: #666; margin: 10px 0;">upload some above or add to assets/photos/ folder</p>
                 </div>
             `;
         }
@@ -596,9 +611,88 @@ function displayPhotos() {
 }
 
 displayResponses();
+loadUploadedImages();  // Load previously uploaded photos
 displayPhotos();
 updateAvatarPreview();
 initializeColorSelector();
+
+function uploadPhotos() {
+    const fileInput = document.getElementById('photo-upload');
+    const files = Array.from(fileInput.files);
+
+    if (files.length === 0) {
+        alert('select photos to upload');
+        return;
+    }
+
+    // Send each image to Google Drive
+    files.forEach(file => {
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64 = e.target.result;
+                sendImageToGoogleDrive(file.name, base64);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Clear input
+    fileInput.value = '';
+    playSound('yay');
+}
+
+async function sendImageToGoogleDrive(filename, base64Data) {
+    const sheetUrl = 'https://script.google.com/macros/s/AKfycbxFnAHaBt0mCIz1W6RleNC83sz3Dj987D0R-1JndtVefjMx8LFBeqO2VOECngBD7ges/exec';
+
+    try {
+        const response = await fetch(sheetUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+                action: 'uploadPhoto',
+                filename: filename,
+                imageData: base64Data
+            })
+        });
+
+        // Since no-cors doesn't return response, just assume success
+        loadUploadedImages();
+    } catch (err) {
+        console.error('Upload error:', err);
+    }
+}
+
+async function loadUploadedImages() {
+    try {
+        const SHEET_ID = '1xGxaS8O0_9IwepWrc03M3GBamYQB3Qng1U5YSR9qczs';
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=uploaded_photos`;
+
+        const res = await fetch(url);
+        const text = await res.text();
+        const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
+
+        if (!match) return;
+
+        const json = JSON.parse(match[1]);
+        if (!json.table || !json.table.rows) return;
+
+        uploadedImages = [];
+        const rows = json.table.rows;
+
+        rows.forEach((row, idx) => {
+            if (idx === 0) return; // Skip headers
+            const cells = row.c;
+            if (cells && cells[1]?.v) {
+                uploadedImages.push(cells[1].v); // URL from Google Drive
+            }
+        });
+
+        displayPhotos();
+    } catch (err) {
+        console.log('Could not load uploaded images');
+    }
+}
 </script>
 
 </body>
